@@ -16,11 +16,9 @@
 		CF40CD3028EFF6CC000CCB7B /* Keyboard002.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF40CD2F28EFF6CB000CCB7B /* Keyboard002.swift */; };
 		CF482862291A21DD0020EC2B /* SingletonHotfix.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF482861291A21DD0020EC2B /* SingletonHotfix.swift */; };
 		CF6561F928D1AE240085AC8D /* Hangul.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6561F828D1AE240085AC8D /* Hangul.swift */; };
-		CF6561FB28D1AE340085AC8D /* Keyboard318.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6561FA28D1AE340085AC8D /* Keyboard318.swift */; };
 		CF6561FD28D1AE590085AC8D /* Keyboards.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6561FC28D1AE590085AC8D /* Keyboards.swift */; };
 		CF6561FF28D1AE6F0085AC8D /* Testcases.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF6561FE28D1AE6F0085AC8D /* Testcases.swift */; };
 		CF714A5B28E6C273000CBDEE /* SingletonMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF714A5A28E6C273000CBDEE /* SingletonMenu.swift */; };
-		CF714A5D28E6C62C000CBDEE /* Keyboard390.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF714A5C28E6C62C000CBDEE /* Keyboard390.swift */; };
 		CF8F931D2D718F5300955352 /* navilime.png in Resources */ = {isa = PBXBuildFile; fileRef = CF8F931C2D718F5300955352 /* navilime.png */; };
 /* End PBXBuildFile section */
 
@@ -37,11 +35,11 @@
 		CF40CD2F28EFF6CB000CCB7B /* Keyboard002.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Keyboard002.swift; sourceTree = "<group>"; };
 		CF482861291A21DD0020EC2B /* SingletonHotfix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingletonHotfix.swift; sourceTree = "<group>"; };
 		CF6561F828D1AE240085AC8D /* Hangul.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Hangul.swift; sourceTree = "<group>"; };
-		CF6561FA28D1AE340085AC8D /* Keyboard318.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Keyboard318.swift; sourceTree = "<group>"; };
 		CF6561FC28D1AE590085AC8D /* Keyboards.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Keyboards.swift; sourceTree = "<group>"; };
 		CF6561FE28D1AE6F0085AC8D /* Testcases.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Testcases.swift; sourceTree = "<group>"; };
 		CF714A5A28E6C273000CBDEE /* SingletonMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingletonMenu.swift; sourceTree = "<group>"; };
-		CF714A5C28E6C62C000CBDEE /* Keyboard390.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Keyboard390.swift; sourceTree = "<group>"; };
+		CFA10B02000000000000A003 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		CFA10B03000000000000A004 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		CF8F931C2D718F5300955352 /* navilime.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = navilime.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -86,6 +84,8 @@
 				CF39BCA328C42D7300CB35AE /* Assets.xcassets */,
 				CF39BCA528C42D7300CB35AE /* MainMenu.xib */,
 				CF39BCA828C42D7300CB35AE /* NavilIME.entitlements */,
+				CFA10B02000000000000A003 /* Signing.xcconfig */,
+				CFA10B03000000000000A004 /* Local.xcconfig.example */,
 				CF8F931C2D718F5300955352 /* navilime.png */,
 			);
 			path = NavilIME;
@@ -97,8 +97,6 @@
 				CF6561F828D1AE240085AC8D /* Hangul.swift */,
 				CF6561FC28D1AE590085AC8D /* Keyboards.swift */,
 				CF6561FE28D1AE6F0085AC8D /* Testcases.swift */,
-				CF6561FA28D1AE340085AC8D /* Keyboard318.swift */,
-				CF714A5C28E6C62C000CBDEE /* Keyboard390.swift */,
 				CF40CD2F28EFF6CB000CCB7B /* Keyboard002.swift */,
 			);
 			path = Automata;
@@ -175,12 +173,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CF714A5D28E6C62C000CBDEE /* Keyboard390.swift in Sources */,
 				CF40CD3028EFF6CC000CCB7B /* Keyboard002.swift in Sources */,
 				CF6561FD28D1AE590085AC8D /* Keyboards.swift in Sources */,
 				CF39BCA228C42D7200CB35AE /* AppDelegate.swift in Sources */,
 				CF6561FF28D1AE6F0085AC8D /* Testcases.swift in Sources */,
-				CF6561FB28D1AE340085AC8D /* Keyboard318.swift in Sources */,
 				CF3237BD28D1AACE008941FE /* SingletonPrintLog.swift in Sources */,
 				CF34BD8B29D6C0A200F69E9E /* SingletonOpt.swift in Sources */,
 				CF482862291A21DD0020EC2B /* SingletonHotfix.swift in Sources */,
@@ -323,16 +319,14 @@
 		};
 		CF39BCAC28C42D7300CB35AE /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CFA10B02000000000000A003 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NavilIME/NavilIME.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 370;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 232X8633XC;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NavilIME/Info.plist;
@@ -355,16 +349,14 @@
 		};
 		CF39BCAD28C42D7300CB35AE /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CFA10B02000000000000A003 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NavilIME/NavilIME.entitlements;
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 370;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 232X8633XC;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NavilIME/Info.plist;

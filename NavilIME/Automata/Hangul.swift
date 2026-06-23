@@ -31,8 +31,15 @@ struct Automata {
     
     func chosung(comp: inout Composition, ch:String) {
         if comp.chosung == "" {
-            // 초성 입력이 처음이면 채움
-            comp.chosung = ch
+            if comp.jungsung != "" {
+                // 중성이 이미 있는데 초성이 비어 있으면, 초성을 중성 앞에 끼워 넣을 수 없다.
+                // (모음만 입력된 열린 음절 상태) 현재 글자를 확정하고 이 자음은
+                // 다음 글자의 초성으로 넘긴다. 안 그러면 ㅠ 다음 ㅋ이 "큐"로 합쳐진다.
+                comp.done = true
+            } else {
+                // 초성 입력이 처음이면 채움
+                comp.chosung = ch
+            }
         } else {
             // 초성 입력이 이미 있는데
             if comp.jungsung != "" {
@@ -189,102 +196,92 @@ class Hangul {
         }
     }
     
-    /*
-     입력기 프론트엔드에 한글 오토마타 엔진이 지원하는 자판 목록과 인스턴스를 전달함
-     여기에 자판 객체를 등록하면 나빌입력기 전체에서 다 참조해서 사용함
-     */
-    static let hangul_keyboard:[Keyboard] = [
-        Keyboard318(),
-        Keyboard390(),
-        Keyboard002()
-    ]
-    static func Get_keyboard318() -> Keyboard318? {
-        return Hangul.hangul_keyboard[0] as? Keyboard318
-    }
-    static func Get_keyboard318() -> Keyboard390? {
-        return Hangul.hangul_keyboard[1] as? Keyboard390
-    }
-    static func Get_keyboard002() -> Keyboard002? {
-        return Hangul.hangul_keyboard[2] as? Keyboard002
-    }
-    
-    func Start(type:Int) {
-        // 일치하는 키보드가 없으면 318을 사용한다.
-        self.keyboard = Hangul.hangul_keyboard[0]
-        
-        for k in Hangul.hangul_keyboard {
-            if k.id == type {
-                self.keyboard = k
-            }
-        }
-        
+    static let keyboard002 = Keyboard002()
+
+    func Start() {
+        self.keyboard = Hangul.keyboard002
         self.automata = Automata(kbd: self.keyboard!)
     }
 
     func Process(ascii:String) -> Bool {
+        guard var automata = self.automata else { return false }
+
         // 자체 영어 입력 모드 - 한글 오토마타를 잠시 중지하면 그게 영어 입력이다.
         if HangulMenu.shared.self_eng_mode {
-            // 잠시 중지면 오토마타를 안돌림
             return false
         }
-        
+
         // 한글인지 확인
         if self.keyboard?.is_hangul(ch: ascii) == false {
             return false
         }
-        // 키보드 입력 시간 델타 업데이트
-        self.keyboard?.update_key_input_time_delta()
-        PrintLog.shared.Log(log: "Key time delta \(String(describing: self.keyboard?.input_delta))")
-        
         // 키보드가 눌릴 때 마다 한 글자씩 오토마타로 넣는다.
-        self.automata!.current.append(ascii)
+        automata.current.append(ascii)
         // 오토마타 돌린다.
-        var comp:Composition = self.automata!.run()
+        var comp:Composition = automata.run()
         // 조합 완료한 글자가 있다면?
         while comp.done {
             // normalization 해서 commited 에 넣는다.
             self.set_commit(comp: comp)
             // comp.done이 없을 때까지  오토마타를 돌린다.
-            comp = self.automata!.run()
+            comp = automata.run()
         }
         // 조합 완료 안된 낱자는 preediting에 넣는다.
         self.set_preedit(comp: comp)
-        
+        self.automata = automata
         return true
     }
-    
-    func Additional(ascii:String) -> String? {
-        self.keyboard?.etc_layout[ascii]
-    }
-    
+
     func Backspace() -> Bool {
-        if self.automata!.current.count > 0 {
-            self.automata!.current.removeLast();
+        guard var automata = self.automata else { return false }
+
+        if automata.current.count > 0 {
+            automata.current.removeLast()
             // 오토마타 돌린다.
-            let comp:Composition = self.automata!.run()
+            let comp:Composition = automata.run()
             // 조합 완료 안된 낱자는 preediting에 넣는다.
             self.set_preedit(comp: comp)
+            self.automata = automata
             return true
         }
         return false
     }
 
     func Flush() {
+        guard var automata = self.automata else { return }
+
         // 오토마타를 돌리고
-        let comp:Composition = self.automata!.run()
+        let comp:Composition = automata.run()
         // 완성이됐건 말건 그냥 commit 해 버리고
         self.set_commit(comp: comp)
         // 입력 버퍼를 비우면 flush!
-        self.automata!.current = []
+        automata.current = []
+        self.automata = automata
     }
 
-    func GetPreedit() -> [unichar] {
+    // 조합 중인 낱자 입력 개수
+    func InputCount() -> Int {
+        return self.automata?.current.count ?? 0
+    }
+
+    // 조합 중인 입력을 커밋하지 않고 조용히 버린다.
+    // (직접 삽입 모드에서 앱이 조합 글자를 이미 가져가 버린 경우 등)
+    func Discard() {
+        self.automata?.current = []
+        self.committed = []
+        self.preediting = []
+        self.debug_commit = []
+        self.debug_preedit = []
+    }
+
+    // 내부 버퍼를 비우고 반환한다는 점을 이름에 드러낸다 (get → take).
+    func takePreedit() -> [unichar] {
         let ret:[unichar] = self.preediting
         self.preediting = []
         return ret
     }
 
-    func GetCommit() -> [unichar] {
+    func takeCommit() -> [unichar] {
         let ret:[unichar] = self.committed
         self.committed = []
         return ret

@@ -10,50 +10,51 @@ import Cocoa
 
 class HangulMenu {
     static let shared = HangulMenu()
-    
-    var selected_keyboard:Int
+
     var menu:NSMenu
-    
     var self_eng_mode:Bool = false
-    
-    let user_default_key = "keyboard"
-    
-    func change_selected_keyboard(id:Int) {
-        self.selected_keyboard = id
-        UserDefaults.standard.set(id, forKey: user_default_key)
-        UserDefaults.standard.synchronize()
-    }
-    
+
+    // 트레이 메뉴에 노출되는 한영전환 단축키 항목들.
+    // tag는 OptHandler.Is_han_eng_changed가 해석하는 hotkey_radio_tag와 동일.
+    let hotkey_items:[NSMenuItem]
+
     private init() {
-        let saved_keyboard = UserDefaults.standard.integer(forKey: user_default_key)
-        if saved_keyboard != 0 {
-            self.selected_keyboard = saved_keyboard
-        } else {
-            self.selected_keyboard = Hangul.hangul_keyboard[0].id
-        }
-        
         self.menu = NSMenu()
-        
-        for keyboard_inst in Hangul.hangul_keyboard {
-            let keyboard_menuitem = NSMenuItem()
-            keyboard_menuitem.title = keyboard_inst.name
-            keyboard_menuitem.tag = keyboard_inst.id
-            keyboard_menuitem.action = #selector(NavilIMEInputController.select_menu(_:))
-            keyboard_menuitem.isEnabled = true
-            if keyboard_inst.id == self.selected_keyboard {
-                keyboard_menuitem.state = NSControl.StateValue.on
-            }
-            self.menu.addItem(keyboard_menuitem)
+
+        let titles:[(Int, String)] = [
+            (0, "시스템입력기 사용"),
+            (1, "왼쪽 Shift + Space"),
+            (2, "오른쪽 Command"),
+            (3, "오른쪽 Option"),
+        ]
+
+        let header = NSMenuItem()
+        header.title = "한/영 전환"
+        header.isEnabled = false
+        self.menu.addItem(header)
+
+        var items:[NSMenuItem] = []
+        let current_tag = OptHandler.shared.hotkey_radio_tag
+        for (tag, title) in titles {
+            let it = NSMenuItem()
+            it.title = title
+            it.tag = tag
+            it.state = (tag == current_tag) ? .on : .off
+            it.action = #selector(NavilIMEInputController.select_haneng_hotkey(_:))
+            it.isEnabled = true
+            self.menu.addItem(it)
+            items.append(it)
         }
-        
-        // 옵션
-        let option_menuitem = NSMenuItem()
-        option_menuitem.title = "옵션"
-        option_menuitem.tag = OptHandler.shared.opt_menu_tag
-        option_menuitem.action = #selector(NavilIMEInputController.select_menu(_:))
-        option_menuitem.isEnabled = true
-        self.menu.addItem(option_menuitem)
-        
+
+        self.hotkey_items = items
+
         self.menu.autoenablesItems = true
+    }
+
+    func set_hotkey(tag:Int) {
+        OptHandler.shared.HanEng_hotkey(sel: tag)
+        for it in self.hotkey_items {
+            it.state = (it.tag == tag) ? .on : .off
+        }
     }
 }
