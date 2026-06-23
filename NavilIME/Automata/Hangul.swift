@@ -31,8 +31,15 @@ struct Automata {
     
     func chosung(comp: inout Composition, ch:String) {
         if comp.chosung == "" {
-            // 초성 입력이 처음이면 채움
-            comp.chosung = ch
+            if comp.jungsung != "" {
+                // 중성이 이미 있는데 초성이 비어 있으면, 초성을 중성 앞에 끼워 넣을 수 없다.
+                // (모음만 입력된 열린 음절 상태) 현재 글자를 확정하고 이 자음은
+                // 다음 글자의 초성으로 넘긴다. 안 그러면 ㅠ 다음 ㅋ이 "큐"로 합쳐진다.
+                comp.done = true
+            } else {
+                // 초성 입력이 처음이면 채움
+                comp.chosung = ch
+            }
         } else {
             // 초성 입력이 이미 있는데
             if comp.jungsung != "" {

@@ -192,5 +192,28 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: [], expect_preedit: ["goX"])
         self.test_debug(hangul: hangul, t: "input", ch: "T", expect_commit: [], expect_preedit: ["goT"])
         self.test_debug(hangul: hangul, t: "input", ch: "S", expect_commit: ["goT"], expect_preedit: ["SXX"])
+
+        self.run_open_syllable()
+    }
+
+    // 중성(모음)만 있는 열린 음절 상태에서 자음이 오면,
+    // 모음을 확정하고 자음은 다음 글자의 초성으로 시작해야 한다.
+    // (Windows 한글 IME 동작. 초성은 중성보다 앞에 와야 하므로, 비어 있는 초성 자리에
+    //  나중에 온 자음을 끼워 넣어 큐(ㅋ+ㅠ)처럼 합치면 안 된다.)
+    func run_open_syllable() {
+        let hangul = Hangul()
+        hangul.Start()
+
+        print("======open-syllable======")
+
+        // ㅠ(b) 다음 ㅋ(z): "ㅠ" 확정 + "ㅋ" 조합 시작 (버그: 큐로 합쳐졌음)
+        self.test_debug(hangul: hangul, t: "input", ch: "b", expect_commit: [], expect_preedit: ["XbX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "z", expect_commit: ["XbX"], expect_preedit: ["zXX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["zXX"], expect_preedit: [])
+
+        // ㅏ(k) 다음 ㄴ(s): "ㅏ" 확정 + "ㄴ" 조합 시작 (나로 합쳐지면 안 됨)
+        self.test_debug(hangul: hangul, t: "input", ch: "k", expect_commit: [], expect_preedit: ["XkX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "s", expect_commit: ["XkX"], expect_preedit: ["sXX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["sXX"], expect_preedit: [])
     }
 }
