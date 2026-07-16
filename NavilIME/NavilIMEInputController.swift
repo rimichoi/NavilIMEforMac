@@ -74,6 +74,13 @@ open class NavilIMEInputController: IMKInputController {
     override open func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         self.ensureHangulReady()
 
+        // IMK는 event=nil로 handle()을 호출하는 경우가 있다(세션 전환 등).
+        // event는 NSEvent!(암시적 언랩)라 nil인 채로 event.keyCode에 접근하면
+        // "Unexpectedly found nil while implicitly unwrapping" 트랩으로 메인 스레드가
+        // 죽는다. 그러면 macOS가 입력기를 회색(비활성)으로 흐리고 재실행하는데,
+        // 이게 '한영 전환 간헐 먹통 → 잠시 뒤 자가복구'의 정체다. nil이면 조용히 무시.
+        guard let event = event else { return false }
+
         if OptHandler.shared.Is_han_eng_changed(keycode: event.keyCode, modi: event.modifierFlags) {
             self.hangul?.ToggleSuspend()
             self.commitComposition(sender)
@@ -341,9 +348,16 @@ open class NavilIMEInputController: IMKInputController {
      */
     override open func recognizedEvents(_ sender: Any!) -> Int {
         // drag는 frame마다 들어와 매번 commit이 호출되므로 제외.
+        //
+        // appKitDefined/applicationDefined/systemDefined는 구독하지 않는다.
+        // 이 이벤트들은 IMK가 문자 뷰어(com.apple.CharacterPaletteIM) 같은
+        // 오버레이 입력기와 조합 세션을 넘겨주고받을 때 쓰는데, handle()에서
+        // 아무 처리도 안 하고 소비만 하면(default 분기 return false) 세션 핸드오프가
+        // 깨져 setMarkedText가 무시되는 상태가 될 수 있다. (⌃⌘Space 후 한글 조합
+        // 먹통 → 숫자/영문은 insertText라 되고 자모만 안 되던 문제) 표준 IME처럼
+        // keyDown + flagsChanged(한영 modifier 토글) + mouse(클릭 시 commit)만 구독한다.
         return Int(NSEvent.EventTypeMask(arrayLiteral: .keyDown, .flagsChanged,
-            .leftMouseUp, .rightMouseUp, .leftMouseDown, .rightMouseDown,
-            .appKitDefined, .applicationDefined, .systemDefined).rawValue)
+            .leftMouseUp, .rightMouseUp, .leftMouseDown, .rightMouseDown).rawValue)
     }
     
     /*
