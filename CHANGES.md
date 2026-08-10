@@ -18,6 +18,36 @@
 - 전용 테스트 타깃이 없어 `Test002`가 실행되지 않던 문제 보완: Debug 빌드
   실행 시 `AppDelegate`에서 오토마타 테스트를 돌린다. (Release는 컴파일 제외)
 
+## 2026-07-16 - 한영 전환 간헐 먹통 해결
+
+### `handle()`의 nil 이벤트 강제 언랩 크래시
+- **증상**: 한영 전환이 간헐적으로 안 되다 잠시 뒤 스스로 복구됨. 그 순간
+  입력 메뉴에서 NavilIME이 회색(비활성)으로 흐려져 있었음.
+- **원인**: IMK가 `event=nil`로 `handle()`을 호출하는 경우가 있는데, 파라미터가
+  `NSEvent!`(암시적 언랩)라 nil인 채 `event.keyCode`에 접근하면
+  "Unexpectedly found nil while implicitly unwrapping" 트랩(EXC_BREAKPOINT,
+  thread 0)으로 메인 스레드가 죽는다. macOS가 입력기를 회색으로 흐리고 자동
+  재실행하는데, 이 사망→재실행이 '먹통→자가복구'의 정체였다.
+  (크래시 리포트: `NavilIME-2026-07-09-165910.ips`)
+- `handle()` 맨 앞에 `guard let event = event else { return false }` 추가.
+- `recognizedEvents`에서 `appKitDefined`/`applicationDefined`/`systemDefined`
+  구독 제거. 이 오버레이 세션 이벤트를 아무 처리 없이 소비만 하면 문자 뷰어
+  (`com.apple.CharacterPaletteIM`) 등과의 세션 핸드오프가 깨져 `setMarkedText`가
+  무시된다. 표준 IME처럼 `keyDown` + `flagsChanged` + mouse만 구독한다.
+  (⌃⌘Space 후 한글 조합만 먹통 → 숫자/영문은 `insertText`라 되던 문제)
+
+## 2026-06-23 - 열린 음절 조합 버그
+
+### 모음만 입력된 상태에서 자음이 오면 잘못 합쳐지는 문제
+- **증상**: 중성(모음)만 있고 초성이 비어 있는 상태에서 자음을 입력하면 자음이
+  비어 있는 초성 자리에 채워져 모음과 합쳐졌다. 예) ㅠ 다음 ㅋ → "큐",
+  ㅏ 다음 ㄴ → "나".
+- 한글은 초성이 중성보다 앞서야 하므로 이미 입력된 중성 앞에 초성을 끼워 넣을
+  수 없다. `Automata.chosung()`에서 초성이 비어 있고 중성이 이미 있으면 현재
+  글자를 확정(`done`)하고, 들어온 자음은 다음 글자의 초성으로 시작하도록 수정.
+  Windows 등 일반 한글 IME와 동작 일치.
+- `Testcases.swift`에 `run_open_syllable()` 회귀 테스트 추가 (ㅠ→ㅋ, ㅏ→ㄴ).
+
 ## 2026-05-27 - 전역 특수키 입력 및 개인 빌드 서명
 
 ### 특수키 조합을 다른 입력기 상태에서도 동작 (전역)
