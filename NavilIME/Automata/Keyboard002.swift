@@ -44,9 +44,10 @@ class Keyboard002 : Keyboard {
         
         // 중성 레이아웃
         self.jungsung_layout = [
-            "O":Jungsung.Yae, "oo":Jungsung.Yae,
-            "P":Jungsung.Ye, "pp":Jungsung.Ye,
-            
+            // ㅒ/ㅖ도 쌍자음과 같이 Shift 조합으로만 입력. 같은 모음 연타(예: pp)는 ㅔㅔ로 분리됨.
+            "O":Jungsung.Yae,
+            "P":Jungsung.Ye,
+
             // 타이핑 속도가 매우 빠르거나 (천타 이상)
             // 그냥 쌍자음 입력후 시프트를 오래 누르는 경우 (시프트를 늦게 떼는 경우) 두벌식 모음 입력이 안되는 현상이 생김
             // 그래서 대문자에도 모음을 맵핑함
