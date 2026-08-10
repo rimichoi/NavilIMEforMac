@@ -232,6 +232,12 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
 
+        // 연타 후 백스페이스. 앞 ㅔ는 이미 확정됐으므로 조합 중인 뒤 ㅔ만 지워진다.
+        // (연타를 ㅖ로 합치던 시절에는 ⌫ 한 번에 ㅖ -> ㅔ로 접혔다.)
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "//b", expect_commit: [], expect_preedit: [])
+
         // ㅐ(o) 연타: ㅒ로 합치지 말고 ㅐ + ㅐ로 분리
         self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: [], expect_preedit: ["XoX"])
         self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: ["XoX"], expect_preedit: ["XoX"])
@@ -248,6 +254,14 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XPX"], expect_preedit: [])
         self.test_debug(hangul: hangul, t: "input", ch: "O", expect_commit: [], expect_preedit: ["XOX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XOX"], expect_preedit: [])
+
+        // 실사용 형태인 초성 + Shift 모음. chosung_proc이 "dO"/"WP"를 초성으로 오인하면 안 된다.
+        self.test_debug(hangul: hangul, t: "input", ch: "d", expect_commit: [], expect_preedit: ["dXX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "O", expect_commit: [], expect_preedit: ["dOX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["dOX"], expect_preedit: [])
+        self.test_debug(hangul: hangul, t: "input", ch: "W", expect_commit: [], expect_preedit: ["WXX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "P", expect_commit: [], expect_preedit: ["WPX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["WPX"], expect_preedit: [])
 
         // 정상 이중 모음 ㅞ(np)는 그대로 조합되고, 그 뒤 ㅔ는 다음 글자로 분리
         self.test_debug(hangul: hangul, t: "input", ch: "n", expect_commit: [], expect_preedit: ["XnX"])
