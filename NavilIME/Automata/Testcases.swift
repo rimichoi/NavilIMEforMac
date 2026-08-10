@@ -194,6 +194,7 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "S", expect_commit: ["goT"], expect_preedit: ["SXX"])
 
         self.run_open_syllable()
+        self.run_vowel_repeat()
     }
 
     // 중성(모음)만 있는 열린 음절 상태에서 자음이 오면,
@@ -215,5 +216,48 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "k", expect_commit: [], expect_preedit: ["XkX"])
         self.test_debug(hangul: hangul, t: "input", ch: "s", expect_commit: ["XkX"], expect_preedit: ["sXX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["sXX"], expect_preedit: [])
+    }
+
+    // 같은 모음 연타는 이중 모음으로 합치지 않는다.
+    // 쌍자음 연타(qq -> ㅃ)를 없앤 것과 같은 이유로 ㅒ/ㅖ도 Shift 조합으로만 입력한다.
+    // (ㅂㅂ는 분리되는데 ㅔㅔ는 ㅖ로 합쳐지던 비대칭 동작을 없앤다.)
+    func run_vowel_repeat() {
+        let hangul = Hangul()
+        hangul.Start()
+
+        print("======vowel-repeat======")
+
+        // ㅔ(p) 연타: ㅖ로 합치지 말고 ㅔ + ㅔ로 분리
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
+
+        // ㅐ(o) 연타: ㅒ로 합치지 말고 ㅐ + ㅐ로 분리
+        self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: [], expect_preedit: ["XoX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: ["XoX"], expect_preedit: ["XoX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XoX"], expect_preedit: [])
+
+        // 초성이 있어도 마찬가지. w p p -> 제 + ㅔ (졔가 되면 안 됨)
+        self.test_debug(hangul: hangul, t: "input", ch: "w", expect_commit: [], expect_preedit: ["wXX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["wpX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["wpX"], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
+
+        // ㅒ/ㅖ는 Shift 조합으로 그대로 입력된다
+        self.test_debug(hangul: hangul, t: "input", ch: "P", expect_commit: [], expect_preedit: ["XPX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XPX"], expect_preedit: [])
+        self.test_debug(hangul: hangul, t: "input", ch: "O", expect_commit: [], expect_preedit: ["XOX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XOX"], expect_preedit: [])
+
+        // 정상 이중 모음 ㅞ(np)는 그대로 조합되고, 그 뒤 ㅔ는 다음 글자로 분리
+        self.test_debug(hangul: hangul, t: "input", ch: "n", expect_commit: [], expect_preedit: ["XnX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XnpX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XnpX"], expect_preedit: ["XpX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
+
+        // 대조군: 자음 연타는 이미 분리 동작 (ㅂ + ㅂ)
+        self.test_debug(hangul: hangul, t: "input", ch: "q", expect_commit: [], expect_preedit: ["qXX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "q", expect_commit: ["qXX"], expect_preedit: ["qXX"])
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["qXX"], expect_preedit: [])
     }
 }
