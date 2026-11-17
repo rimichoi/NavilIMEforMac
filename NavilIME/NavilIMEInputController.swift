@@ -14,16 +14,9 @@ open class NavilIMEInputController: IMKInputController {
     
     var hangul:Hangul?
 
-    /*
-     텔레그램처럼 keyDown 오버라이드에서 `엔터 && !hasMarkedText()` 로 전송을 판정하는 앱은
-     그 판정이 입력기가 이벤트를 받기 전에 끝난다. 그래서 marked text 방식으로 조합하는 한
-     조합 중 엔터는 절대 첫 타에 전송되지 않는다 (엔터 두 번 문제).
-     이 앱들에서는 시스템 한글 입력기처럼 marked text 없이 조합한다:
-     조합 중 글자를 실제 텍스트로 즉시 넣고, 조합이 진행되면 insertText(replacementRange:)로
-     직전 글자를 교체한다. (Apple 한글 IME, SokIM DirectStrategy, hangeul_ime와 같은 방식)
-     주의: 이 목록에 앱을 추가하려면 그 앱이 selectedRange()와 attributedSubstring(from:)을
-     제대로 지원해야 한다. (커서 위치를 못 읽으면 교체 범위를 계산할 수 없다)
-     */
+    // 이 앱들은 입력기보다 먼저 keyDown에서 `엔터 && !hasMarkedText()`로 전송을 판정해, marked text로
+    // 조합하면 엔터가 첫 타에 전송되지 않는다. 그래서 조합 글자를 실제 텍스트로 넣고 교체한다.
+    // 추가할 앱은 attributedSubstring(from:)이 nil을 주지 않아야 한다(nil이면 매 키 조합이 버려진다).
     static let direct_insert_clients:Set<String> = ["ru.keepcoder.Telegram"]
 
     func is_direct(_ client:Any!) -> Bool {
@@ -74,14 +67,12 @@ open class NavilIMEInputController: IMKInputController {
     override open func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         self.ensureHangulReady()
 
-        // IMK는 event=nil로 handle()을 호출하는 경우가 있다(세션 전환 등).
-        // event는 NSEvent!(암시적 언랩)라 nil인 채로 event.keyCode에 접근하면
-        // "Unexpectedly found nil while implicitly unwrapping" 트랩으로 메인 스레드가
-        // 죽는다. 그러면 macOS가 입력기를 회색(비활성)으로 흐리고 재실행하는데,
-        // 이게 '한영 전환 간헐 먹통 → 잠시 뒤 자가복구'의 정체다. nil이면 조용히 무시.
+        // IMK가 event=nil로 호출하기도 한다. NSEvent!라 그대로 읽으면 트랩으로 입력기가 죽는다.
         guard let event = event else { return false }
 
-        if OptHandler.shared.Is_han_eng_changed(keycode: event.keyCode, modi: event.modifierFlags) {
+        // 마우스 이벤트에서 keyCode를 읽으면 NSInternalInconsistencyException이 난다
+        if event.type == .keyDown || event.type == .flagsChanged,
+           OptHandler.shared.Is_han_eng_changed(keycode: event.keyCode, modi: event.modifierFlags) {
             self.hangul?.ToggleSuspend()
             self.commitComposition(sender)
             return true
@@ -105,8 +96,6 @@ open class NavilIMEInputController: IMKInputController {
     func keydown_event_handler(event:NSEvent, client:Any!) -> Bool {
         guard let hangul = self.hangul else { return false }
 
-        // 직접 삽입 모드: 우리가 모르는 사이 필드가 바뀌었으면(엔터 전송으로 비워짐, 클릭 등)
-        // 들고 있던 조합 상태를 조용히 버리고 이번 키부터 새로 시작한다.
         self.direct_sync_check(client: client)
 
         let keycode = event.keyCode
@@ -143,9 +132,7 @@ open class NavilIMEInputController: IMKInputController {
         if keycode == backspace {
             PrintLog.shared.Log(log: "Backspace")
 
-            // 직접 삽입 모드에서 마지막 낱자를 지우는 백스페이스는 앱에 그대로 넘긴다.
-            // 화면의 조합 글자는 실제 텍스트라서 앱 네이티브 백스페이스로 지우는 게 확실하다.
-            // (커스텀 텍스트뷰에서 insertText("")의 '빈 문자열 = 삭제' 동작은 보장되지 않음)
+            // 커스텀 텍스트뷰는 insertText("")를 삭제로 처리한다는 보장이 없어 앱 백스페이스에 맡긴다
             if self.is_direct(client) && hangul.InputCount() == 1 {
                 hangul.Discard()
                 self.direct_pending = ""
@@ -244,11 +231,6 @@ open class NavilIMEInputController: IMKInputController {
         }
     }
     
-    /*
-     직접 삽입 모드의 화면 갱신.
-     조합 중 글자(preedit)를 marked text 대신 실제 텍스트로 넣는다.
-     직전 키에서 넣어둔 글자(direct_pending)가 있으면 그 범위를 새 내용으로 교체한다.
-     */
     func direct_update(disp:IMKTextInput, commited:String, preediting:String) {
         let new_text = commited + preediting
         let old_pending = self.direct_pending
@@ -275,7 +257,7 @@ open class NavilIMEInputController: IMKInputController {
             // 직전에 넣어둔 조합 글자가 커서 앞에 그대로 있는지 확인하고 교체
             let check_range = NSRange(location: sel.location - old_len, length: old_len)
             let actual = disp.attributedSubstring(from: check_range)?.string
-            if actual == nil || actual == old_pending {
+            if actual == old_pending {
                 rr = check_range
                 base = sel.location - old_len
             }
@@ -292,12 +274,7 @@ open class NavilIMEInputController: IMKInputController {
         PrintLog.shared.Log(log: "direct: '\(new_text)' rr=\(rr) pending='\(self.direct_pending)' exp=\(self.direct_expected_loc)")
     }
 
-    /*
-     직접 삽입 모드의 일관성 검사. 키 입력 처리 전에 호출한다.
-     조합 글자가 실제 텍스트라서, 앱이 그걸 포함해 전송해 버리거나(텔레그램 엔터는
-     입력기에 전달되지 않고 keyDown에서 소비됨) 사용자가 클릭으로 커서를 옮겨도
-     입력기는 알 수 없다. 기대 커서 위치/내용과 다르면 조합 상태를 조용히 버린다.
-     */
+    // 앱이 조합 글자를 포함해 전송했거나(텔레그램 엔터는 입력기에 오지 않는다) 커서가 옮겨졌으면 조합을 버린다
     func direct_sync_check(client:Any!) {
         guard self.direct_pending.isEmpty == false,
               let disp = client as? IMKTextInput,
@@ -312,9 +289,8 @@ open class NavilIMEInputController: IMKInputController {
             || (sel.location < pending_len)
         if stale == false {
             let check_range = NSRange(location: sel.location - pending_len, length: pending_len)
-            if let actual = disp.attributedSubstring(from: check_range)?.string {
-                stale = (actual != self.direct_pending)
-            }
+            let actual = disp.attributedSubstring(from: check_range)?.string
+            stale = (actual != self.direct_pending)
         }
         if stale {
             PrintLog.shared.Log(log: "direct: field changed externally, discard composition")
@@ -331,7 +307,6 @@ open class NavilIMEInputController: IMKInputController {
      */
     override open func commitComposition(_ sender: Any!) {
         PrintLog.shared.Log(log: "Commit Composition")
-        // 직접 삽입 모드: 필드가 외부에서 바뀐 채 커밋이 오면 stale 조합부터 정리
         self.direct_sync_check(client: sender)
         self.hangul?.Flush()
         self.update_display(client: sender)
@@ -348,14 +323,8 @@ open class NavilIMEInputController: IMKInputController {
      */
     override open func recognizedEvents(_ sender: Any!) -> Int {
         // drag는 frame마다 들어와 매번 commit이 호출되므로 제외.
-        //
-        // appKitDefined/applicationDefined/systemDefined는 구독하지 않는다.
-        // 이 이벤트들은 IMK가 문자 뷰어(com.apple.CharacterPaletteIM) 같은
-        // 오버레이 입력기와 조합 세션을 넘겨주고받을 때 쓰는데, handle()에서
-        // 아무 처리도 안 하고 소비만 하면(default 분기 return false) 세션 핸드오프가
-        // 깨져 setMarkedText가 무시되는 상태가 될 수 있다. (⌃⌘Space 후 한글 조합
-        // 먹통 → 숫자/영문은 insertText라 되고 자모만 안 되던 문제) 표준 IME처럼
-        // keyDown + flagsChanged(한영 modifier 토글) + mouse(클릭 시 commit)만 구독한다.
+        // appKitDefined/applicationDefined/systemDefined를 구독하면 문자 뷰어(⌃⌘Space)를
+        // 닫은 뒤 setMarkedText가 무시돼 자모 조합만 먹통이 된다.
         return Int(NSEvent.EventTypeMask(arrayLiteral: .keyDown, .flagsChanged,
             .leftMouseUp, .rightMouseUp, .leftMouseDown, .rightMouseDown).rawValue)
     }

@@ -6,6 +6,20 @@
 
 원본: [navilera/NavilIMEforMac](https://github.com/navilera/NavilIMEforMac)
 
+## 2026-11-17 - 교차리뷰 반영
+
+### 마우스 이벤트의 `keyCode` 예외
+- `handle()`이 이벤트 종류와 상관없이 `event.keyCode`를 읽어, 마우스 이벤트마다
+  `NSInternalInconsistencyException`이 났다(IMK가 잡아 로그만 남김). 그래서 클릭 시
+  조합을 확정하는 마우스 분기가 실행되지 않았다.
+- 한영 전환 판정을 `keyDown`/`flagsChanged`에서만 하도록 한정. 이제 텍스트 안을
+  클릭하면 조합 중인 글자가 확정된다.
+
+### 텔레그램 직접 삽입: 글자 조회 실패 시 덮어쓰기
+- `attributedSubstring(from:)`이 nil을 주면 화면 글자가 그대로라고 보고 그 범위를
+  교체해, 외부에서 바뀐 같은 길이의 텍스트를 덮어쓸 수 있었다. nil이면 조합을 버리도록 수정.
+- `Testcases.swift`에 `run_discard()` 회귀 테스트 추가.
+
 ## 2026-08-10 - 두벌식 모음 연타 분리
 
 ### 같은 모음 연타를 ㅒ/ㅖ로 합치지 않음
@@ -31,10 +45,9 @@
   (크래시 리포트: `NavilIME-2026-07-09-165910.ips`)
 - `handle()` 맨 앞에 `guard let event = event else { return false }` 추가.
 - `recognizedEvents`에서 `appKitDefined`/`applicationDefined`/`systemDefined`
-  구독 제거. 이 오버레이 세션 이벤트를 아무 처리 없이 소비만 하면 문자 뷰어
-  (`com.apple.CharacterPaletteIM`) 등과의 세션 핸드오프가 깨져 `setMarkedText`가
-  무시된다. 표준 IME처럼 `keyDown` + `flagsChanged` + mouse만 구독한다.
-  (⌃⌘Space 후 한글 조합만 먹통 → 숫자/영문은 `insertText`라 되던 문제)
+  구독 제거. 구독 중에는 문자 뷰어(⌃⌘Space)를 닫은 뒤 `setMarkedText`가 무시돼
+  한글 조합만 먹통이 됐다(숫자/영문은 `insertText`라 입력됨).
+  `keyDown` + `flagsChanged` + mouse만 구독한다.
 
 ## 2026-06-23 - 열린 음절 조합 버그
 
@@ -48,9 +61,24 @@
   Windows 등 일반 한글 IME와 동작 일치.
 - `Testcases.swift`에 `run_open_syllable()` 회귀 테스트 추가 (ㅠ→ㅋ, ㅏ→ㄴ).
 
+## 2026-06-23 - 텔레그램 직접 삽입, 전역 특수키 제거
+
+### 텔레그램 조합 중 엔터가 첫 타에 전송되지 않는 문제
+- 텔레그램은 입력기보다 먼저 `엔터 && !hasMarkedText()`로 전송을 판정한다.
+  `direct_insert_clients`(`ru.keepcoder.Telegram`)에서는 marked text 대신 조합 글자를
+  실제 텍스트로 넣고 `insertText(replacementRange:)`로 교체한다
+  (`direct_update`/`direct_sync_check`, `Hangul.InputCount()`/`Discard()`).
+
+### 특수키 조합 기능 제거
+- `SpecialKeyTap`(전역)과 IMK 경로의 `special_keys`(`Shift+ESC→~`, `Cmd+ESC→\``,
+  `Cmd+\→₩`), 손쉬운 사용 권한 메뉴를 제거. 아래 2026-05-27, 2026-04-14의 특수키 항목은
+  더 이상 동작하지 않는다.
+- 손쉬운 사용 권한이 필요 없어져 App Sandbox를 다시 켬.
+- 개인 IDE 상태 파일(`*.xcuserstate`, `xcschememanagement.plist`) 추적 해제.
+
 ## 2026-05-27 - 전역 특수키 입력 및 개인 빌드 서명
 
-### 특수키 조합을 다른 입력기 상태에서도 동작 (전역)
+### 특수키 조합을 다른 입력기 상태에서도 동작 (전역) — 2026-06-23 제거
 - `SpecialKeyTap`: 세션 레벨 `CGEventTap`으로 특수키 조합(`Shift+ESC→~`,
   `Cmd+ESC→\``, `Cmd+\→₩`)을 전역에서 가로채 치환.
 - 현재 입력기가 NavilIME가 아닐 때만 가로채고, NavilIME 활성 시엔 기존 IMK
@@ -59,7 +87,7 @@
 - App Sandbox에서는 전역 이벤트 탭이 막히므로 entitlements에서 `app-sandbox`를
   끔. (App Store가 아닌 직접 설치 방식이라 무방)
 
-### 손쉬운 사용 권한 UI
+### 손쉬운 사용 권한 UI — 2026-06-23 제거
 - `CGEventTap`은 손쉬운 사용(Accessibility) 권한이 필요.
 - 트레이 메뉴에 "특수키 전역 입력 권한 허용…" 항목 추가. 권한이 있으면
   "특수키 전역 입력: 켜짐 ✓"로 표시(비활성).
@@ -105,7 +133,7 @@
 - 타이틀 "NavilIME 옵션"으로 변경
 - AppDelegate에서 디버그 로그 설정 코드 제거
 
-### 특수키 조합 추가
+### 특수키 조합 추가 — 2026-06-23 제거
 - `Shift + ESC` -> `~` (물결)
 - `Cmd + ESC` -> `` ` `` (백틱)
 - `Cmd + \` -> `₩` (원화 기호)

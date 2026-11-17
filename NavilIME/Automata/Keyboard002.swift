@@ -44,7 +44,6 @@ class Keyboard002 : Keyboard {
         
         // 중성 레이아웃
         self.jungsung_layout = [
-            // ㅒ/ㅖ도 쌍자음과 같이 Shift 조합으로만 입력. 같은 모음 연타(예: pp)는 ㅔㅔ로 분리됨.
             "O":Jungsung.Yae,
             "P":Jungsung.Ye,
 

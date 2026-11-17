@@ -195,67 +195,56 @@ class Test002 : TestCase {
 
         self.run_open_syllable()
         self.run_vowel_repeat()
+        self.run_discard()
     }
 
-    // 중성(모음)만 있는 열린 음절 상태에서 자음이 오면,
-    // 모음을 확정하고 자음은 다음 글자의 초성으로 시작해야 한다.
-    // (Windows 한글 IME 동작. 초성은 중성보다 앞에 와야 하므로, 비어 있는 초성 자리에
-    //  나중에 온 자음을 끼워 넣어 큐(ㅋ+ㅠ)처럼 합치면 안 된다.)
+    // 모음만 있는 음절 뒤의 자음은 다음 글자의 초성이 된다 (ㅠ+ㅋ ≠ 큐)
     func run_open_syllable() {
         let hangul = Hangul()
         hangul.Start()
 
         print("======open-syllable======")
 
-        // ㅠ(b) 다음 ㅋ(z): "ㅠ" 확정 + "ㅋ" 조합 시작 (버그: 큐로 합쳐졌음)
         self.test_debug(hangul: hangul, t: "input", ch: "b", expect_commit: [], expect_preedit: ["XbX"])
         self.test_debug(hangul: hangul, t: "input", ch: "z", expect_commit: ["XbX"], expect_preedit: ["zXX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["zXX"], expect_preedit: [])
 
-        // ㅏ(k) 다음 ㄴ(s): "ㅏ" 확정 + "ㄴ" 조합 시작 (나로 합쳐지면 안 됨)
         self.test_debug(hangul: hangul, t: "input", ch: "k", expect_commit: [], expect_preedit: ["XkX"])
         self.test_debug(hangul: hangul, t: "input", ch: "s", expect_commit: ["XkX"], expect_preedit: ["sXX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["sXX"], expect_preedit: [])
     }
 
-    // 같은 모음 연타는 이중 모음으로 합치지 않는다.
-    // 쌍자음 연타(qq -> ㅃ)를 없앤 것과 같은 이유로 ㅒ/ㅖ도 Shift 조합으로만 입력한다.
-    // (ㅂㅂ는 분리되는데 ㅔㅔ는 ㅖ로 합쳐지던 비대칭 동작을 없앤다.)
+    // 같은 모음 연타는 이중 모음으로 합치지 않는다. ㅒ/ㅖ는 Shift 조합으로만 입력한다.
     func run_vowel_repeat() {
         let hangul = Hangul()
         hangul.Start()
 
         print("======vowel-repeat======")
 
-        // ㅔ(p) 연타: ㅖ로 합치지 말고 ㅔ + ㅔ로 분리
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
 
-        // 연타 후 백스페이스. 앞 ㅔ는 이미 확정됐으므로 조합 중인 뒤 ㅔ만 지워진다.
-        // (연타를 ㅖ로 합치던 시절에는 ⌫ 한 번에 ㅖ -> ㅔ로 접혔다.)
+        // 연타 후 백스페이스는 조합 중인 뒤 ㅔ만 지운다
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "//b", expect_commit: [], expect_preedit: [])
 
-        // ㅐ(o) 연타: ㅒ로 합치지 말고 ㅐ + ㅐ로 분리
         self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: [], expect_preedit: ["XoX"])
         self.test_debug(hangul: hangul, t: "input", ch: "o", expect_commit: ["XoX"], expect_preedit: ["XoX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XoX"], expect_preedit: [])
 
-        // 초성이 있어도 마찬가지. w p p -> 제 + ㅔ (졔가 되면 안 됨)
         self.test_debug(hangul: hangul, t: "input", ch: "w", expect_commit: [], expect_preedit: ["wXX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["wpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["wpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
 
-        // ㅒ/ㅖ는 Shift 조합으로 그대로 입력된다
         self.test_debug(hangul: hangul, t: "input", ch: "P", expect_commit: [], expect_preedit: ["XPX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XPX"], expect_preedit: [])
         self.test_debug(hangul: hangul, t: "input", ch: "O", expect_commit: [], expect_preedit: ["XOX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XOX"], expect_preedit: [])
 
-        // 실사용 형태인 초성 + Shift 모음. chosung_proc이 "dO"/"WP"를 초성으로 오인하면 안 된다.
+        // chosung_proc이 "dO"/"WP"를 초성으로 오인하면 안 된다
         self.test_debug(hangul: hangul, t: "input", ch: "d", expect_commit: [], expect_preedit: ["dXX"])
         self.test_debug(hangul: hangul, t: "input", ch: "O", expect_commit: [], expect_preedit: ["dOX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["dOX"], expect_preedit: [])
@@ -263,15 +252,31 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "P", expect_commit: [], expect_preedit: ["WPX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["WPX"], expect_preedit: [])
 
-        // 정상 이중 모음 ㅞ(np)는 그대로 조합되고, 그 뒤 ㅔ는 다음 글자로 분리
         self.test_debug(hangul: hangul, t: "input", ch: "n", expect_commit: [], expect_preedit: ["XnX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XnpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XnpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
 
-        // 대조군: 자음 연타는 이미 분리 동작 (ㅂ + ㅂ)
         self.test_debug(hangul: hangul, t: "input", ch: "q", expect_commit: [], expect_preedit: ["qXX"])
         self.test_debug(hangul: hangul, t: "input", ch: "q", expect_commit: ["qXX"], expect_preedit: ["qXX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["qXX"], expect_preedit: [])
+    }
+
+    // 직접 삽입 모드는 앱이 가져간 조합을 커밋 없이 버리고 다음 키부터 새로 조합한다
+    func run_discard() {
+        let hangul = Hangul()
+        hangul.Start()
+
+        print("======discard======")
+
+        self.test_debug(hangul: hangul, t: "input", ch: "r", expect_commit: [], expect_preedit: ["rXX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "k", expect_commit: [], expect_preedit: ["rkX"])
+        self.test_debug(hangul: hangul, t: "input", ch: "s", expect_commit: [], expect_preedit: ["rks"])
+        self.test_debug(hangul: hangul, t: "input", ch: "k", expect_commit: ["rkX"], expect_preedit: ["skX"])
+        assert(hangul.InputCount() == 2)
+        hangul.Discard()
+        assert(hangul.InputCount() == 0)
+        self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: [], expect_preedit: [])
+        self.test_debug(hangul: hangul, t: "input", ch: "s", expect_commit: [], expect_preedit: ["sXX"])
     }
 }
