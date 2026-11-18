@@ -16,7 +16,7 @@ open class NavilIMEInputController: IMKInputController {
 
     // 이 앱들은 입력기보다 먼저 keyDown에서 `엔터 && !hasMarkedText()`로 전송을 판정해, marked text로
     // 조합하면 엔터가 첫 타에 전송되지 않는다. 그래서 조합 글자를 실제 텍스트로 넣고 교체한다.
-    // 추가할 앱은 attributedSubstring(from:)이 nil을 주지 않아야 한다(nil이면 매 키 조합이 버려진다).
+    // 이 목록에 앱을 추가하려면 그 앱이 selectedRange()와 attributedSubstring(from:)을 제대로 지원해야 한다.
     static let direct_insert_clients:Set<String> = ["ru.keepcoder.Telegram"]
 
     func is_direct(_ client:Any!) -> Bool {
@@ -257,7 +257,7 @@ open class NavilIMEInputController: IMKInputController {
             // 직전에 넣어둔 조합 글자가 커서 앞에 그대로 있는지 확인하고 교체
             let check_range = NSRange(location: sel.location - old_len, length: old_len)
             let actual = disp.attributedSubstring(from: check_range)?.string
-            if actual == old_pending {
+            if actual == nil || actual == old_pending {
                 rr = check_range
                 base = sel.location - old_len
             }

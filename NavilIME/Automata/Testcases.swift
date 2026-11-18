@@ -225,7 +225,6 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["XpX"], expect_preedit: [])
 
-        // 연타 후 백스페이스는 조합 중인 뒤 ㅔ만 지운다
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: [], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "p", expect_commit: ["XpX"], expect_preedit: ["XpX"])
         self.test_debug(hangul: hangul, t: "input", ch: "//b", expect_commit: [], expect_preedit: [])
@@ -262,7 +261,6 @@ class Test002 : TestCase {
         self.test_debug(hangul: hangul, t: "flush", ch: "", expect_commit: ["qXX"], expect_preedit: [])
     }
 
-    // 직접 삽입 모드는 앱이 가져간 조합을 커밋 없이 버리고 다음 키부터 새로 조합한다
     func run_discard() {
         let hangul = Hangul()
         hangul.Start()
