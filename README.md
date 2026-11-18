@@ -30,7 +30,7 @@
 - 일반 Windows 한글 IME와 동작 일치
 
 ### 전역 특수키(SpecialKeyTap) 제거
-- 베이스에 있던 `₩` / `~` / `` ` `` 전역 입력 기능 제거 (Karabiner로 대체)
+- 베이스에 있던 `₩` / `~` / `` ` `` 전역 입력 기능 제거 (대체 수단 없음)
 - 덕분에 **손쉬운 사용(Accessibility) 권한이 불필요**해졌고 **App Sandbox를 다시 활성화**
 
 베이스(JaeyunJun)의 상세 변경 이력은 [CHANGES.md](CHANGES.md)를, 이 포크의 추가 변경은 커밋 히스토리를 참고하세요.
